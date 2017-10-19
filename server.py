@@ -17,7 +17,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 """Bind the socket to a port."""
-server_address = ('localhost', helper.socket)
+server_address = ('localhost', helper.port)
 print >> sys.stderr, '~~~~Starting up on %s port %s~~~~' % server_address
 sock.bind(server_address)
 

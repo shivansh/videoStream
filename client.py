@@ -18,7 +18,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 """Connect the socket to the server on its listening port."""
-server_address = ('localhost', helper.socket)
+server_address = ('localhost', helper.port)
 print >> sys.stderr, '~~~~Connecting to %s port %s~~~~' % server_address
 sock.connect(server_address)
 

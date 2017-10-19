@@ -1,0 +1,5 @@
+# Ignore test files
+received_file
+
+# Ignore generated files
+*.pyc

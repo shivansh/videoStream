@@ -4,7 +4,7 @@
 file transfers when chunk sizes are smaller than the file size.
 """
 chunk_size = 32
-socket = 2248
+port = 2248
 
 def readFileInChunks(file_object, chunk_size):
     """Lazy function to read file in "chunk_size" byte chunks.
