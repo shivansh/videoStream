@@ -5,7 +5,7 @@ import sys
 
 import helper
 
-served_file_name = 'serve/test_file'
+args = helper.parser.parse_args()
 
 def cleanup(connection):
     """Closes the connection and performs cleanup."""
@@ -17,8 +17,8 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 """Bind the socket to a port."""
-server_address = ('localhost', helper.port)
-print >> sys.stderr, '~~~~Starting up on %s port %s~~~~' % server_address
+server_address = ('localhost', args.port)
+print >> sys.stderr, '~~~~Starting up on %s:%s~~~~' % server_address
 sock.bind(server_address)
 
 """Listen for incoming connections."""
@@ -34,9 +34,13 @@ try:
             print >> sys.stderr, 'Connection from', client_address
             print >> sys.stderr, 'Starting file transfer'
 
-            f = open(served_file_name)
-            for chunk in helper.readFileInChunks(f, helper.chunk_size):
-                connection.sendall(chunk)
+            """Retrieve the requested filename from client."""
+            filename = connection.recv(32)
+
+            if filename:
+                f = open(helper.serve_dir + filename)
+                for chunk in helper.readFileInChunks(f, helper.chunk_size):
+                    connection.sendall(chunk)
 
             print >> sys.stderr, 'File transfer complete'
             f.close()
@@ -45,4 +49,4 @@ try:
             cleanup(connection)
 
 except KeyboardInterrupt:
-    cleanup(connection)
+    sys.exit()

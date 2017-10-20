@@ -1,4 +1,5 @@
 """Client file to request files from the server."""
+
 import filecmp
 import os
 import socket
@@ -6,7 +7,10 @@ import sys
 
 import helper
 
-received_file_name = 'received_file'
+helper.parser.add_argument('file',
+                           type = str,
+                           help = 'Filename which will be requested from server')
+args = helper.parser.parse_args()
 
 def cleanup(sock):
     """Closes the connection and performs cleanup."""
@@ -18,15 +22,18 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 """Connect the socket to the server on its listening port."""
-server_address = ('localhost', helper.port)
-print >> sys.stderr, '~~~~Connecting to %s port %s~~~~' % server_address
+server_address = ('localhost', args.port)
+print >> sys.stderr, '~~~~Connecting to %s:%s~~~~' % server_address
 sock.connect(server_address)
 
 try:
-    if os.path.isfile(received_file_name):
-        os.remove(received_file_name)
+    if os.path.isfile(args.file):
+        os.remove(args.file)
 
-    f = open(received_file_name, 'a')
+    """Send the filename to server."""
+    sock.sendall(args.file)
+
+    f = open(args.file, 'a')
 
     while True:
         chunk = sock.recv(helper.chunk_size)
@@ -41,7 +48,7 @@ except KeyboardInterrupt:
 
 finally:
     """Check if files match."""
-    if filecmp.cmp('serve/test_file', 'received_file'):
+    if filecmp.cmp(helper.serve_dir + args.file, args.file):
         print >> sys.stderr, 'File transfer successful, files match!'
     else:
         print >> sys.stderr, 'Invalid file transfer'
