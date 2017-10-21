@@ -1,11 +1,28 @@
 """Server file to serve files requested by the connecting clients."""
 
+from multiprocessing import Process
 import socket
 import sys
 
 import helper
 
 args = helper.parser.parse_args()
+
+def handleConnection(connection, client_address):
+    print >> sys.stderr, 'Connection from', client_address
+    print >> sys.stderr, 'Starting file transfer'
+
+    """Retrieve the requested filename from client."""
+    filename = connection.recv(32)
+
+    if filename:
+        print 'Sending file'
+        f = open(helper.serve_dir + filename)
+        for chunk in helper.readFileInChunks(f, helper.chunk_size):
+            connection.sendall(chunk)
+
+    print >> sys.stderr, 'File transfer complete'
+    f.close()
 
 def cleanup(connection):
     """Closes the connection and performs cleanup."""
@@ -22,7 +39,7 @@ print >> sys.stderr, '~~~~Starting up on %s:%s~~~~' % server_address
 sock.bind(server_address)
 
 """Listen for incoming connections."""
-sock.listen(1)
+sock.listen(5)
 
 try:
     while True:
@@ -30,23 +47,15 @@ try:
         print >> sys.stderr, '~~~~Waiting for a connection~~~~'
         connection, client_address = sock.accept()
 
-        try:
-            print >> sys.stderr, 'Connection from', client_address
-            print >> sys.stderr, 'Starting file transfer'
-
-            """Retrieve the requested filename from client."""
-            filename = connection.recv(32)
-
-            if filename:
-                f = open(helper.serve_dir + filename)
-                for chunk in helper.readFileInChunks(f, helper.chunk_size):
-                    connection.sendall(chunk)
-
-            print >> sys.stderr, 'File transfer complete'
-            f.close()
-
-        finally:
-            cleanup(connection)
+        """The connection should be handled by another child 'process'.
+        NOTE: The idea is to currently ease things and use processes
+        instead of threads. The eventual goal is to convert everything
+        into a single process model using threads.
+        """
+        p = Process(target = handleConnection, args = (connection, client_address))
+        p.start()
+        p.join()
+        cleanup(connection)
 
 except KeyboardInterrupt:
     sys.exit()

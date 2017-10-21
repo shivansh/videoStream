@@ -1,4 +1,5 @@
 # (Appropriately) ignore test files
+freebsd_iso
 test_file
 !serve/test_file
 
