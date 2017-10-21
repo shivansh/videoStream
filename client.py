@@ -44,14 +44,9 @@ try:
     f.close()
 
 except KeyboardInterrupt:
-    cleanup(sock)
     sys.exit("KeyboardInterrupt encountered")
 
 finally:
-    """FIXME: This segment seems to run even when KeyboardInterrupt
-    is encountered.
-    """
-
     """Validate correctness of the file-transfer."""
     if filecmp.cmp(helper.serve_dir + args.file, args.file):
         print >> sys.stderr, 'File transfer successful, files match!'

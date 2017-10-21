@@ -13,7 +13,7 @@ def handleConnection(connection, client_address):
     print >> sys.stderr, 'Starting file transfer'
 
     """Retrieve the requested filename from client."""
-    filename = connection.recv(32)
+    filename = connection.recv(helper.chunk_size)
 
     if filename:
         print 'Sending file'
@@ -53,9 +53,9 @@ try:
         into a single process model using threads.
         """
         p = Process(target = handleConnection, args = (connection, client_address))
+        p.daemon = True
         p.start()
-        p.join()
         cleanup(connection)
 
 except KeyboardInterrupt:
-    sys.exit()
+    sys.exit("KeyboardInterrupt encountered")
