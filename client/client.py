@@ -5,6 +5,7 @@ import os
 import socket
 import sys
 
+sys.path.insert(0, '..')
 import helper
 import video_player
 

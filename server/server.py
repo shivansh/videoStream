@@ -4,6 +4,7 @@ from multiprocessing import Process
 import socket
 import sys
 
+sys.path.insert(0, '..')
 import frame_capture
 import helper
 
