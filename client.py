@@ -17,11 +17,11 @@ def cleanup(sock):
     print >> sys.stderr, '~~~~Closing the socket~~~~'
     sock.close()
 
-"""Create a TCP/IP socket."""
+# Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-"""Connect the socket to the server on its listening port."""
+# Connect the socket to the server on its listening port.
 server_address = ('localhost', args.port)
 print >> sys.stderr, '~~~~Connecting to %s:%s~~~~' % server_address
 sock.connect(server_address)
@@ -30,7 +30,7 @@ try:
     if os.path.isfile(args.file):
         os.remove(args.file)
 
-    """Send the filename to server."""
+    # Send the filename to server.
     sock.sendall(args.file)
 
     f = open(args.file, 'a')
@@ -47,7 +47,7 @@ except KeyboardInterrupt:
     sys.exit("KeyboardInterrupt encountered")
 
 finally:
-    """Validate correctness of the file-transfer."""
+    # Validate correctness of the file-transfer.
     if filecmp.cmp(helper.serve_dir + args.file, args.file):
         print >> sys.stderr, 'File transfer successful, files match!'
     else:
