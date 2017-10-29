@@ -16,12 +16,12 @@ def captureFrames(output_file):
     while(cap.isOpened()):
         ret, frame = cap.read()
 
+        # Frame validation will not (possibly) slow
+        # things down if performed at the endpoints.
         if ret == True:
             out.write(frame)    # write the frame
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-        else:
-            break
 
     # Cleanup
     cap.release()
