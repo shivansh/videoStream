@@ -8,6 +8,7 @@ smaller than the file size.
 """
 chunk_size = 32
 serve_dir = 'serve/'  # Directory from where the server serves.
+video_file = 'output.avi'
 
 parser = argparse.ArgumentParser(description='',
                                  add_help = False)

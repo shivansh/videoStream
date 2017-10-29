@@ -4,15 +4,16 @@ from multiprocessing import Process
 import socket
 import sys
 
+import frame_capture
 import helper
 
 args = helper.parser.parse_args()
 
 def handleConnection(connection, client_address):
     print >> sys.stderr, 'Connection from', client_address
-    print >> sys.stderr, 'Starting file transfer'
+    print >> sys.stderr, 'Starting broadcast'
 
-    # Retrieve the requested filename from client.
+    # Retrieve the requested stream from client.
     filename = connection.recv(helper.chunk_size)
 
     if filename:
@@ -42,6 +43,12 @@ sock.bind(server_address)
 sock.listen(5)
 
 try:
+    # Spawn a process to capture video frames into a file.
+    # TODO Avoid writing to disk.
+    frame_capture_process = Process(target = frame_capture.captureFrames(helper.serve_dir + helper.video_file))
+    frame_capture_process.daemon = True
+    frame_capture_process.start()
+
     while True:
         # Wait for a connection.
         print >> sys.stderr, '~~~~Waiting for a connection~~~~'
