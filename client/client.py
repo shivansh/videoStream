@@ -10,9 +10,6 @@ import sys
 sys.path.insert(0, '../include')
 import helper
 
-# NOTE: The idea of 'video stream' which is supposed to
-# be retrieved is kind of sloppy at the moment. It simply
-# represents the video file which is to be retrieved.
 args = helper.parser.parse_args()
 
 def cleanup(sock):
@@ -38,13 +35,13 @@ try:
             data += sock.recv(helper.chunk_size)
 
         # Retrieve the payload size by unpacking the
-        # first 'paylaod_size' bytes
+        # first 'paylaod_size' bytes.
         packed_chunk_size = data[:payload_size]
         chunk_size = struct.unpack('Q', packed_chunk_size)[0]
 
         data = data[payload_size:]
 
-        # Retrieve pending payload (if any)
+        # Retrieve pending payload (if any).
         while len(data) < chunk_size:
             data += sock.recv(helper.chunk_size)
 
