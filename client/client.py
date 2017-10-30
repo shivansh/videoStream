@@ -1,20 +1,18 @@
 """Client file to request files from the server."""
 
-from multiprocessing import Process
-import os
+import cv2
+import numpy as np
+import pickle
 import socket
+import struct
 import sys
 
 sys.path.insert(0, '..')
 import helper
-import video_player
 
 # NOTE: The idea of 'video stream' which is supposed to
 # be retrieved is kind of sloppy at the moment. It simply
 # represents the video file which is to be retrieved.
-helper.parser.add_argument('file',
-                           type = str,
-                           help = 'Video stream which will be requested from server. This is currently hardcoded to \'output.avi\'')
 args = helper.parser.parse_args()
 
 def cleanup(sock):
@@ -32,29 +30,41 @@ print >> sys.stderr, '~~~~Connecting to %s:%s~~~~' % server_address
 sock.connect(server_address)
 
 try:
-    if os.path.isfile(args.file):
-        os.remove(args.file)
-
-    # Send the stream name to server.
-    sock.sendall(args.file)
-
-    f = open(args.file, 'a')
-
-    # Spawn a process to play the retrieved video stream.
-    video_player_process = Process(target = video_player.playVideo(helper.serve_dir + args.file))
-    video_player_process.daemon = True
-    video_player_process.start()
+    payload_size = struct.calcsize('Q')
+    data = ""
 
     while True:
-        chunk = sock.recv(helper.chunk_size)
-        if not chunk:
-            break
-        f.write(chunk)
+        while len(data) < payload_size:
+            data += sock.recv(helper.chunk_size)
 
-    f.close()
+        # Retrieve the payload size by unpacking the
+        # first 'paylaod_size' bytes
+        packed_chunk_size = data[:payload_size]
+        chunk_size = struct.unpack('Q', packed_chunk_size)[0]
+
+        data = data[payload_size:]
+
+        # Retrieve pending payload (if any)
+        while len(data) < chunk_size:
+            data += sock.recv(helper.chunk_size)
+
+        frame_data = data[:chunk_size]
+
+        # It might be possible that the next payload was
+        # retrieved in the above (second) transfer.
+        # Update 'data' to contain only the next payload.
+        data = data[chunk_size:]
+
+        # Deserialize frames retreived from the payload.
+        frame = pickle.loads(frame_data)
+        cv2.imshow('frame', frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cv2.destroyAllWindows()
+    cleanup(sock)
 
 except KeyboardInterrupt:
-    sys.exit("KeyboardInterrupt encountered")
-
-finally:
     cleanup(sock)
+    sys.exit("KeyboardInterrupt encountered")

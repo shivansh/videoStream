@@ -2,12 +2,7 @@
 
 import argparse
 
-"""The chunk size is currently set to a non-realistic value of
-32 bytes to demonstrate file transfers when chunk sizes are
-smaller than the file size.
-"""
-chunk_size = 32
-serve_dir = 'serve/'  # Directory from where the server serves.
+chunk_size = 4096
 video_file = 'output.avi'
 
 parser = argparse.ArgumentParser(description='',

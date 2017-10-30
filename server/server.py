@@ -1,30 +1,44 @@
 """Server file to serve files requested by the connecting clients."""
 
-from multiprocessing import Process
+import cv2
+import numpy as np
+import pickle
 import socket
+import struct
 import sys
+from multiprocessing import Process
 
 sys.path.insert(0, '..')
-import frame_capture
 import helper
 
 args = helper.parser.parse_args()
 
 def handleConnection(connection, client_address):
+    """Handles an individual client connection."""
     print >> sys.stderr, 'Connection from', client_address
     print >> sys.stderr, 'Starting broadcast'
 
-    # Retrieve the requested stream from client.
-    filename = connection.recv(helper.chunk_size)
+    cap = cv2.VideoCapture(0)
 
-    if filename:
-        print 'Sending file'
-        f = open(helper.serve_dir + filename)
-        for chunk in helper.readFileInChunks(f, helper.chunk_size):
-            connection.sendall(chunk)
+    while True:
+        data = ""
+        ret, frame = cap.read()
+        # Serialize the frames
+        data += pickle.dumps(frame)
 
-    print >> sys.stderr, 'File transfer complete'
-    f.close()
+        # Each data chunk comprises of the following:
+        #       +--------------+--------------+
+        #       | Payload size |   Payload    |
+        #       |   (Packed)   | (Serialized) |
+        #       +--------------+--------------+
+        if len(data) >= helper.chunk_size:
+            # Collect 'helper.chunk_size' worth of
+            # payload before starting the transfer.
+            connection.sendall(struct.pack('Q', len(data)) + data)
+
+    # Cleanup
+    cap.release()
+    cv2.destroyAllWindows()
 
 def cleanup(connection):
     """Closes the connection and performs cleanup."""
@@ -42,27 +56,22 @@ sock.bind(server_address)
 
 # Listen for incoming connections.
 sock.listen(5)
+connection = ""
 
 try:
-    # Spawn a process to capture video frames into a file.
-    # TODO Avoid writing to disk.
-    frame_capture_process = Process(target = frame_capture.captureFrames(helper.serve_dir + helper.video_file))
-    frame_capture_process.daemon = True
-    frame_capture_process.start()
-
     while True:
         # Wait for a connection.
         print >> sys.stderr, '~~~~Waiting for a connection~~~~'
         connection, client_address = sock.accept()
 
         # The connection should be handled by another child 'process'.
-        # NOTE: The idea is to currently ease things and use processes
-        # instead of threads. The eventual goal is to convert everything
-        # into a single process model using threads.
         p = Process(target = handleConnection, args = (connection, client_address))
         p.daemon = True
         p.start()
-        cleanup(connection)
 
 except KeyboardInterrupt:
+    cleanup(connection)
     sys.exit("KeyboardInterrupt encountered")
+
+finally:
+    cleanup(connection)
