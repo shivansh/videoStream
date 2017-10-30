@@ -2,7 +2,6 @@
 freebsd_iso
 test_file
 !serve/test_file
-*.go
 docs/
 
 # Ignore generated files

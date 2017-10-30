@@ -7,7 +7,7 @@ import socket
 import struct
 import sys
 
-sys.path.insert(0, '..')
+sys.path.insert(0, '../include')
 import helper
 
 # NOTE: The idea of 'video stream' which is supposed to

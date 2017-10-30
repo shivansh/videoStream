@@ -8,7 +8,7 @@ import struct
 import sys
 from multiprocessing import Process
 
-sys.path.insert(0, '..')
+sys.path.insert(0, '../include')
 import helper
 
 args = helper.parser.parse_args()

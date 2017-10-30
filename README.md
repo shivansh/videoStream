@@ -10,14 +10,16 @@ The current setup performs the transfer locally at localhost.
   ```
   python server.py <port>
   ```
-  This will spawn two processes -
-    - The first process starts listening for clients at `localhost:port`.
-    - The second process starts capturing frames from the webcam and writes them to a file (currently hardcoded to `serve/output.avi`).
+  Retrieve a collection of frames (currently 4096 bytes) from the webcam and construct the following chunk to be transferred -
+  ```
+      +--------------+--------------+
+      | Payload size |   Payload    |
+      |   (Packed)   | (Serialized) |
+      +--------------+--------------+
+  ```
 
 * Start the client -
   ```
   python client.py <port> output.avi
   ```
-  This will spawn two processes -
-    - The first process will connect to the server and start retrieving video frames, simultaneously saving them to `output.avi` on the client-side.
-    - The second process starts a video player which plays the captured stream.
+  This will retrieve the payload from server, unpack and desiarialize appropriately and render the frames on the fly.
