@@ -26,8 +26,11 @@ server_address = ('localhost', args.port)
 print >> sys.stderr, '~~~~Connecting to %s:%s~~~~' % server_address
 sock.connect(server_address)
 
+# Restrict the media-player window size to fit the screen.
+cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
+
 try:
-    payload_size = struct.calcsize('Q')
+    payload_size = struct.calcsize('l')
     data = ""
 
     while True:
@@ -45,7 +48,7 @@ try:
         while len(data) < chunk_size:
             data += sock.recv(helper.chunk_size)
 
-        frame_data = data[:chunk_size]
+        serialized_frame = data[:chunk_size]
 
         # It might be possible that the next payload was
         # retrieved in the above (second) transfer.
@@ -53,7 +56,7 @@ try:
         data = data[chunk_size:]
 
         # Deserialize frames retreived from the payload.
-        frame = pickle.loads(frame_data)
+        frame = pickle.loads(serialized_frame)
         cv2.imshow('frame', frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):

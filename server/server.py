@@ -19,6 +19,11 @@ def handleConnection(connection, client_address):
     print >> sys.stderr, 'Starting broadcast'
 
     cap = cv2.VideoCapture(0)
+    # Adjust screen resolution.
+    frame_width = 160
+    frame_height = 120
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
     while True:
         data = ""
@@ -34,7 +39,7 @@ def handleConnection(connection, client_address):
         if len(data) >= helper.chunk_size:
             # Collect 'helper.chunk_size' worth of
             # payload before starting the transfer.
-            connection.sendall(struct.pack('Q', len(data)) + data)
+            connection.sendall(struct.pack('l', len(data)) + data)
 
     # Cleanup
     cap.release()
