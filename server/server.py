@@ -1,32 +1,41 @@
 """Server file to serve files requested by the connecting clients."""
 
 import cv2
-import numpy as np
 import pickle
 import socket
 import struct
 import sys
-from multiprocessing import Process
+import time
+from threading import Thread
+from Queue import Queue
 
 sys.path.insert(0, '../include')
 import helper
 
 args = helper.parser.parse_args()
 
-def handleConnection(connection, client_address):
-    """Handles an individual client connection."""
-    print >> sys.stderr, 'Connection from', client_address
-    print >> sys.stderr, 'Starting broadcast'
+# TODO (shivansh) Replace queue with say, a list ; the
+# current implementation is buggy as it will work only
+# if there is a single consumer as the payload is always
+# dequeued and sent over the socket. An ideal implementation
+# will maintain a list of payloads to be served, and each
+# consumer should keep track of the last payload which it
+# served and look out for next payload (if ready) in the list.
+q = Queue()
 
-    cap = cv2.VideoCapture(0)
-    # Adjust screen resolution.
-    frame_width = 160
-    frame_height = 120
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+# Start stream and adjust screen resolution.
+cap = cv2.VideoCapture(0)
+frame_width = 160
+frame_height = 120
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+
+def webcamFeed():
+    """Collects frames from the webcam."""
+    data = ""
+    global q
 
     while True:
-        data = ""
         ret, frame = cap.read()
         # Serialize the frames
         data += pickle.dumps(frame)
@@ -36,17 +45,35 @@ def handleConnection(connection, client_address):
         #       | Payload size |   Payload    |
         #       |   (Packed)   | (Serialized) |
         #       +--------------+--------------+
+        #
+        # Collect 'helper.chunk_size' worth of
+        # payload before starting the transfer.
         if len(data) >= helper.chunk_size:
-            # Collect 'helper.chunk_size' worth of
-            # payload before starting the transfer.
-            connection.sendall(struct.pack('l', len(data)) + data)
+            q.put(struct.pack('l', len(data)) + data)
+            data = ""
+            # Yield CPU so that the thread corresponding
+            # to 'handleConnection' is scheduled.
+            time.sleep(0)
 
-    # Cleanup
-    cap.release()
-    cv2.destroyAllWindows()
+def handleConnection(connection, client_address):
+    """Handles an individual client connection."""
+    print 'handle'
+    global q
+
+    print >> sys.stderr, 'Connection from', client_address
+    print >> sys.stderr, 'Starting broadcast'
+
+    while True:
+        if not q.empty():
+            connection.sendall(q.get())
+        else:
+            # Yield CPU so that the thread corresponding
+            # to 'webcamFeed' is scheduled.
+            time.sleep(0)
 
 def cleanup(connection):
     """Closes the connection and performs cleanup."""
+    cv2.destroyAllWindows()
     print >> sys.stderr, '~~~~Closing the socket~~~~'
     connection.close()
 
@@ -64,15 +91,23 @@ sock.listen(5)
 connection = ""
 
 try:
+    # Start a thread to collect frames and generate
+    # payload to be served to the clients.
+    payload_thread = Thread(target = webcamFeed)
+    payload_thread.setDaemon(True)
+    payload_thread.start()
+
     while True:
         # Wait for a connection.
         print >> sys.stderr, '~~~~Waiting for a connection~~~~'
         connection, client_address = sock.accept()
 
-        # The connection should be handled by another child 'process'.
-        p = Process(target = handleConnection, args = (connection, client_address))
-        p.daemon = True
-        p.start()
+        # Start a consumer thread corresponding to
+        # each connected client.
+        consumer_thread = Thread(target = handleConnection,
+                                 args = (connection, client_address))
+        consumer_thread.setDaemon(True)
+        consumer_thread.start()
 
 except KeyboardInterrupt:
     cleanup(connection)

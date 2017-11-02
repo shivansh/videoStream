@@ -1,7 +1,6 @@
 """Client file to request files from the server."""
 
 import cv2
-import numpy as np
 import pickle
 import socket
 import struct
@@ -62,9 +61,9 @@ try:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    cv2.destroyAllWindows()
     cleanup(sock)
 
 except KeyboardInterrupt:
+    cv2.destroyAllWindows()
     cleanup(sock)
     sys.exit("KeyboardInterrupt encountered")
