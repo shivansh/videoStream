@@ -1,7 +1,7 @@
 # Concurrent feedback-driven video broadcast protocol
 
 ## Dependencies
-* OpenCV
+* OpenCV (3.2.0)
 
 ## Instructions
 The current setup performs the transfer locally at localhost.
