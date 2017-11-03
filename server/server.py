@@ -12,6 +12,7 @@ from Queue import Queue
 sys.path.insert(0, '../include')
 import helper
 
+# Define the globals
 args = helper.parser.parse_args()
 
 # TODO (shivansh) Replace queue with say, a list ; the
@@ -30,10 +31,14 @@ frame_height = 120
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
+consumer_thread_cpu_bursts = 0  # Total CPU bursts for 'handleConnection'
+webcam_thread_cpu_bursts = 0    # Total CPU bursts for 'webcamFeed'
+connection = None
+
 def webcamFeed():
     """Collects frames from the webcam."""
     data = ""
-    global q
+    global q, consumer_thread_cpu_bursts
 
     while True:
         ret, frame = cap.read()
@@ -53,12 +58,13 @@ def webcamFeed():
             data = ""
             # Yield CPU so that the thread corresponding
             # to 'handleConnection' is scheduled.
+            consumer_thread_cpu_bursts += 1
             time.sleep(0)
 
 def handleConnection(connection, client_address):
     """Handles an individual client connection."""
     print 'handle'
-    global q
+    global q, webcam_thread_cpu_bursts
 
     print >> sys.stderr, 'Connection from', client_address
     print >> sys.stderr, 'Starting broadcast'
@@ -69,13 +75,19 @@ def handleConnection(connection, client_address):
         else:
             # Yield CPU so that the thread corresponding
             # to 'webcamFeed' is scheduled.
-            time.sleep(0)
+            webcam_thread_cpu_bursts += 1
+            time.sleep(0.1)
 
 def cleanup(connection):
     """Closes the connection and performs cleanup."""
     cv2.destroyAllWindows()
     print >> sys.stderr, '~~~~Closing the socket~~~~'
     connection.close()
+
+def serverStatistics():
+    """Logs data for tracking server performance."""
+    print '# times handleConnection scheduled: ', consumer_thread_cpu_bursts
+    print '# times webcamFeed scheduled: ', webcam_thread_cpu_bursts
 
 # Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -88,17 +100,15 @@ sock.bind(server_address)
 
 # Listen for incoming connections.
 sock.listen(5)
-connection = ""
+
+# Start a thread to collect frames and generate
+# payload to be served to the clients.
+webcam_thread = Thread(target = webcamFeed)
+webcam_thread.setDaemon(True)
+webcam_thread.start()
 
 try:
-    # Start a thread to collect frames and generate
-    # payload to be served to the clients.
-    payload_thread = Thread(target = webcamFeed)
-    payload_thread.setDaemon(True)
-    payload_thread.start()
-
     while True:
-        # Wait for a connection.
         print >> sys.stderr, '~~~~Waiting for a connection~~~~'
         connection, client_address = sock.accept()
 
@@ -111,6 +121,7 @@ try:
 
 except KeyboardInterrupt:
     cleanup(connection)
+    serverStatistics()
     sys.exit("KeyboardInterrupt encountered")
 
 finally:
