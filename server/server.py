@@ -32,15 +32,15 @@ frame_height = 120
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
-consumer_thread_bursts = 0  # Total CPU bursts for 'handleConnection'
-webcam_thread_bursts = 0    # Total CPU bursts for 'webcamFeed'
-consumer_thread_count = 1
+consumer_thread_yields = 0  # Total CPU yields for 'handleConnection'
+webcam_thread_yields = 0    # Total CPU yields for 'webcamFeed'
+consumer_thread_count = 0
 connection = None
 
 def webcamFeed():
     """Collects frames from the webcam."""
     data = ""
-    global q, consumer_thread_bursts
+    global q, webcam_thread_yields
 
     while True:
         ret, frame = cap.read()
@@ -60,12 +60,12 @@ def webcamFeed():
             data = ""
             # Yield CPU so that the thread corresponding
             # to 'handleConnection' is scheduled.
-            consumer_thread_bursts += 1
+            webcam_thread_yields += 1
             time.sleep(0)
 
 def handleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
-    global q, webcam_thread_bursts
+    global q, consumer_thread_yields
 
     print 'Thread %d: Connection from %s' % (thread_id, client_address)
     print 'Thread %d: Starting broadcast' % thread_id
@@ -77,7 +77,7 @@ def handleConnection(connection, client_address, thread_id):
             else:
                 # Yield CPU so that the thread corresponding
                 # to 'webcamFeed' is scheduled.
-                webcam_thread_bursts += 1
+                consumer_thread_yields += 1
                 time.sleep(0.1)
 
     except socket.error, e:
@@ -93,20 +93,20 @@ def handleConnection(connection, client_address, thread_id):
     except IOError, e:
         print >> sys.stderr, 'IOError:', e
 
-
 def cleanup(connection):
-    """Closes the connection and performs cleanup."""
-    cv2.destroyAllWindows()
-    print 'Closing the socket'
-    connection.close()
+    if connection:
+        """Closes the connection and performs cleanup."""
+        cv2.destroyAllWindows()
+        print 'Closing the socket'
+        connection.close()
 
 def serverStatistics():
     """Logs data for tracking server performance."""
     print '\nServer statistics' \
         + '\n-----------------' \
-        + '\nNo. of CPU bursts -'
-    print '  * handleConnection:', consumer_thread_bursts
-    print '  * webcamFeed:', webcam_thread_bursts
+        + '\nNo. of CPU yields -'
+    print '  * handleConnection:', consumer_thread_yields
+    print '  * webcamFeed:', webcam_thread_yields
 
 # Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -137,9 +137,9 @@ try:
                                  args = (connection,
                                          client_address,
                                          consumer_thread_count))
+        consumer_thread_count += 1
         consumer_thread.setDaemon(True)
         consumer_thread.start()
-        consumer_thread_count += 1
 
 except KeyboardInterrupt:
     cleanup(connection)

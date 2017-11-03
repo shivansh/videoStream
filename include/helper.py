@@ -5,7 +5,7 @@ import argparse
 # To reduce the number of thread switches between
 # the the 'webcamFeed' and 'handleConnection' threads,
 # the individual payload size is kept large (1 MB).
-chunk_size = 1024*1024
+chunk_size = 1048576
 video_file = 'output.avi'
 
 parser = argparse.ArgumentParser(description='',
