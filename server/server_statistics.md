@@ -2,8 +2,8 @@
 Data to keep track of server performance.
 
 ## Payload data
-* Average payload generation time: 0.03 seconds
-* Time take to serve 10 payloads: 3 * 10^(-5) seconds
+* Average payload generation time: `0.03 seconds`
+* Time take to serve 10 payloads: `3 * 10^(-5) seconds`
 
 ## Thread scheduling data
 | Commit  | handleConnection (CPU yields) | webcamFeed (CPU yields) |

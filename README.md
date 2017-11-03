@@ -20,6 +20,6 @@ The current setup performs the transfer locally at localhost.
 
 * Start the client -
   ```
-  python client.py <port> output.avi
+  python client.py <port>
   ```
   This will retrieve the payload from server, unpack and desiarialize appropriately and render the frames on the fly.
