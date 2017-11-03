@@ -13,7 +13,7 @@ args = helper.parser.parse_args()
 
 def cleanup(sock):
     """Closes the connection and performs cleanup."""
-    print >> sys.stderr, '~~~~Closing the socket~~~~'
+    print 'Closing the socket'
     sock.close()
 
 # Create a TCP/IP socket.
@@ -22,7 +22,7 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Connect the socket to the server on its listening port.
 server_address = ('localhost', args.port)
-print >> sys.stderr, '~~~~Connecting to %s:%s~~~~' % server_address
+print 'Connecting to %s:%s' % server_address
 sock.connect(server_address)
 
 # Restrict the media-player window size to fit the screen.

@@ -1,6 +1,7 @@
 """Server file to serve files requested by the connecting clients."""
 
 import cv2
+import errno
 import pickle
 import socket
 import struct
@@ -31,14 +32,15 @@ frame_height = 120
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
-consumer_thread_cpu_bursts = 0  # Total CPU bursts for 'handleConnection'
-webcam_thread_cpu_bursts = 0    # Total CPU bursts for 'webcamFeed'
+consumer_thread_bursts = 0  # Total CPU bursts for 'handleConnection'
+webcam_thread_bursts = 0    # Total CPU bursts for 'webcamFeed'
+consumer_thread_count = 1
 connection = None
 
 def webcamFeed():
     """Collects frames from the webcam."""
     data = ""
-    global q, consumer_thread_cpu_bursts
+    global q, consumer_thread_bursts
 
     while True:
         ret, frame = cap.read()
@@ -58,36 +60,53 @@ def webcamFeed():
             data = ""
             # Yield CPU so that the thread corresponding
             # to 'handleConnection' is scheduled.
-            consumer_thread_cpu_bursts += 1
+            consumer_thread_bursts += 1
             time.sleep(0)
 
-def handleConnection(connection, client_address):
+def handleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
-    print 'handle'
-    global q, webcam_thread_cpu_bursts
+    global q, webcam_thread_bursts
 
-    print >> sys.stderr, 'Connection from', client_address
-    print >> sys.stderr, 'Starting broadcast'
+    print 'Thread %d: Connection from %s' % (thread_id, client_address)
+    print 'Thread %d: Starting broadcast' % thread_id
 
-    while True:
-        if not q.empty():
-            connection.sendall(q.get())
+    try:
+        while True:
+            if not q.empty():
+                connection.sendall(q.get())
+            else:
+                # Yield CPU so that the thread corresponding
+                # to 'webcamFeed' is scheduled.
+                webcam_thread_bursts += 1
+                time.sleep(0.1)
+
+    except socket.error, e:
+        if isinstance(e.args, tuple):
+            if e[0] == errno.EPIPE:
+                print >> sys.stderr, 'Client disconnected'
+            else:
+                # TODO Handle other socket errors.
+                pass
         else:
-            # Yield CPU so that the thread corresponding
-            # to 'webcamFeed' is scheduled.
-            webcam_thread_cpu_bursts += 1
-            time.sleep(0.1)
+            print >> sys.stderr, 'Socket error', e
+
+    except IOError, e:
+        print >> sys.stderr, 'IOError:', e
+
 
 def cleanup(connection):
     """Closes the connection and performs cleanup."""
     cv2.destroyAllWindows()
-    print >> sys.stderr, '~~~~Closing the socket~~~~'
+    print 'Closing the socket'
     connection.close()
 
 def serverStatistics():
     """Logs data for tracking server performance."""
-    print '# times handleConnection scheduled: ', consumer_thread_cpu_bursts
-    print '# times webcamFeed scheduled: ', webcam_thread_cpu_bursts
+    print '\nServer statistics' \
+        + '\n-----------------' \
+        + '\nNo. of CPU bursts -'
+    print '  * handleConnection:', consumer_thread_bursts
+    print '  * webcamFeed:', webcam_thread_bursts
 
 # Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -95,7 +114,7 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Bind the socket to a port.
 server_address = ('localhost', args.port)
-print >> sys.stderr, '~~~~Starting up on %s:%s~~~~' % server_address
+print 'Starting up on %s:%s' % server_address
 sock.bind(server_address)
 
 # Listen for incoming connections.
@@ -109,15 +128,18 @@ webcam_thread.start()
 
 try:
     while True:
-        print >> sys.stderr, '~~~~Waiting for a connection~~~~'
+        print 'Thread %d: Waiting for a connection' % consumer_thread_count
         connection, client_address = sock.accept()
 
         # Start a consumer thread corresponding to
         # each connected client.
         consumer_thread = Thread(target = handleConnection,
-                                 args = (connection, client_address))
+                                 args = (connection,
+                                         client_address,
+                                         consumer_thread_count))
         consumer_thread.setDaemon(True)
         consumer_thread.start()
+        consumer_thread_count += 1
 
 except KeyboardInterrupt:
     cleanup(connection)
