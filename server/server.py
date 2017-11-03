@@ -1,6 +1,7 @@
 """Server file to serve files requested by the connecting clients."""
 
 import cv2
+import datetime
 import errno
 import pickle
 import socket
@@ -36,16 +37,23 @@ consumer_thread_yields = 0  # Total CPU yields for 'handleConnection'
 webcam_thread_yields = 0    # Total CPU yields for 'webcamFeed'
 consumer_thread_count = 0
 connection = None
+frames_per_payload = 0
+payload_count = 0
 
 def webcamFeed():
-    """Collects frames from the webcam."""
+    """Constructs a payload from the frames collected from
+    the webcam and inserts them into a global queue.
+    """
     data = ""
-    global q, webcam_thread_yields
+    count_frames = 0
+    generated_payloads = 0
+    global q, webcam_thread_yields, frames_per_payload, avg_payload_gen_time
 
     while True:
         ret, frame = cap.read()
         # Serialize the frames
         data += pickle.dumps(frame)
+        count_frames += 1
 
         # Each data chunk comprises of the following:
         #       +--------------+--------------+
@@ -56,29 +64,43 @@ def webcamFeed():
         # Collect 'helper.chunk_size' worth of
         # payload before starting the transfer.
         if len(data) >= helper.chunk_size:
+            generated_payloads += 1
             q.put(struct.pack('l', len(data)) + data)
             data = ""
-            # Yield CPU so that the thread corresponding
-            # to 'handleConnection' is scheduled.
-            webcam_thread_yields += 1
-            time.sleep(0)
+
+            if frames_per_payload == 0:
+                frames_per_payload = count_frames
+
+            # Yield CPU after generating 3 payloads.
+            # The average payload generation time (on my machine)
+            # is 0.03 seconds. Thus, generating 10 payloads will
+            # take approximately 0.3 seconds, which is the duration
+            # for which consumer thread sleeps.
+            if generated_payloads == 10:
+                generated_payloads = 0
+                webcam_thread_yields += 1
+                time.sleep(0.2)
 
 def handleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
-    global q, consumer_thread_yields
+    global q, consumer_thread_yields, payload_count
 
     print 'Thread %d: Connection from %s' % (thread_id, client_address)
     print 'Thread %d: Starting broadcast' % thread_id
 
     try:
         while True:
+            # The time take to serve 10 payloads is -
+            # (3 * 10^(-5)) + (10*0.02) = 0.2 (approx.)
             if not q.empty():
+                payload_count += 1
                 connection.sendall(q.get())
+                time.sleep(0.02)
             else:
                 # Yield CPU so that the thread corresponding
                 # to 'webcamFeed' is scheduled.
                 consumer_thread_yields += 1
-                time.sleep(0.1)
+                time.sleep(0.3)
 
     except socket.error, e:
         if isinstance(e.args, tuple):
@@ -107,6 +129,9 @@ def serverStatistics():
         + '\nNo. of CPU yields -'
     print '  * handleConnection:', consumer_thread_yields
     print '  * webcamFeed:', webcam_thread_yields
+    print 'Frames per payload:', frames_per_payload
+    print 'Payloads delivered:', payload_count
+    print ''
 
 # Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -10,11 +10,19 @@ sys.path.insert(0, '../include')
 import helper
 
 args = helper.parser.parse_args()
+frame_count = 0
 
 def cleanup(sock):
     """Closes the connection and performs cleanup."""
     print 'Closing the socket'
     sock.close()
+
+def clientStatistics():
+    """Logs data for tracking client performance."""
+    print '\nClient statistics' \
+        + '\n-----------------'
+    print 'Frames displayed:', frame_count
+    print ''
 
 # Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,7 +47,7 @@ try:
         # Retrieve the payload size by unpacking the
         # first 'paylaod_size' bytes.
         packed_chunk_size = data[:payload_size]
-        chunk_size = struct.unpack('Q', packed_chunk_size)[0]
+        chunk_size = struct.unpack('l', packed_chunk_size)[0]
 
         data = data[payload_size:]
 
@@ -57,6 +65,7 @@ try:
         # Deserialize frames retreived from the payload.
         frame = pickle.loads(serialized_frame)
         cv2.imshow('frame', frame)
+        frame_count += 1
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -66,4 +75,5 @@ try:
 except KeyboardInterrupt:
     cv2.destroyAllWindows()
     cleanup(sock)
+    clientStatistics()
     sys.exit("KeyboardInterrupt encountered")

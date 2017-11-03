@@ -1,7 +1,12 @@
 # Server statistics
-Data to keep track of server performance
+Data to keep track of server performance.
 
-| Commit  | handleConnection (CPU bursts) | webcamFeed (CPU bursts) |
+## Payload data
+* Average payload generation time: 0.03 seconds
+* Time take to serve 10 payloads: 3 * 10^(-5) seconds
+
+## Thread scheduling data
+| Commit  | handleConnection (CPU yields) | webcamFeed (CPU yields) |
 |---------|:-----------------------------:|:-----------------------:|
 | 4b6d88f |              126              |          363473         |
 | 7ff9cc6 |              126              |            98           |
