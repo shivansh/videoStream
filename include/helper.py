@@ -2,10 +2,8 @@
 
 import argparse
 
-# To reduce the number of thread switches between
-# the the 'webcamFeed' and 'handleConnection' threads,
-# the individual payload size is kept large (1 MB).
 chunk_size = 2097152
+frames_per_payload = 10
 
 parser = argparse.ArgumentParser(description='',
                                  add_help = False)

@@ -5,12 +5,14 @@ import pickle
 import socket
 import struct
 import sys
+import time
 
 sys.path.insert(0, '../include')
 import helper
 
 args = helper.parser.parse_args()
 frame_count = 0
+socket_ops = 0
 
 def cleanup(sock):
     """Closes the connection and performs cleanup."""
@@ -22,6 +24,7 @@ def clientStatistics():
     print '\nClient statistics' \
         + '\n-----------------'
     print 'Frames displayed:', frame_count
+    print 'Socket operations:', socket_ops
     print ''
 
 # Create a TCP/IP socket.
@@ -39,10 +42,13 @@ cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
 try:
     payload_size = struct.calcsize('l')
     data = ""
+    sleep_time = helper.frames_per_payload / 100.0
+    socket_ops = 0
 
     while True:
         while len(data) < payload_size:
             data += sock.recv(helper.chunk_size)
+            socket_ops += 1
 
         # Retrieve the payload size by unpacking the
         # first 'paylaod_size' bytes.
@@ -54,6 +60,7 @@ try:
         # Retrieve pending payload (if any).
         while len(data) < chunk_size:
             data += sock.recv(helper.chunk_size)
+            socket_ops += 1
 
         serialized_frame = data[:chunk_size]
 
@@ -66,14 +73,16 @@ try:
         frame = pickle.loads(serialized_frame)
         cv2.imshow('frame', frame)
         frame_count += 1
+        time.sleep(sleep_time)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
-    cleanup(sock)
 
 except KeyboardInterrupt:
     cv2.destroyAllWindows()
     cleanup(sock)
     clientStatistics()
     sys.exit("KeyboardInterrupt encountered")
+
+finally:
+    cleanup(sock)
