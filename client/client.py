@@ -18,6 +18,8 @@ def cleanup(sock):
     """Closes the connection and performs cleanup."""
     print 'Closing the socket'
     sock.close()
+    cv2.destroyAllWindows()
+    clientStatistics()
 
 def clientStatistics():
     """Logs data for tracking client performance."""
@@ -46,7 +48,10 @@ try:
 
     while True:
         while len(data) < payload_size:
-            data += sock.recv(helper.chunk_size)
+            payload = sock.recv(helper.chunk_size)
+            if not payload:
+                sys.exit("Server closed the connection")
+            data += payload
             socket_ops += 1
 
         # Retrieve the payload size by unpacking the
@@ -78,9 +83,6 @@ try:
             break
 
 except KeyboardInterrupt:
-    cv2.destroyAllWindows()
-    cleanup(sock)
-    clientStatistics()
     sys.exit("KeyboardInterrupt encountered")
 
 finally:

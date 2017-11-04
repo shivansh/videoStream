@@ -55,7 +55,8 @@ def webcamFeed():
         payload += struct.pack('l', len(serialized_frame)) + serialized_frame
         count_frames += 1
 
-        # Each payload comprises of 10 of the following structures -
+        # Each payload comprises of 'frames_per_payload'
+        # number of the following structures -
         #       +------------+--------------+
         #       | Frame size |    Frame     |
         #       |  (Packed)  | (Serialized) |
@@ -69,7 +70,7 @@ def webcamFeed():
             payload = ""
             count_frames = 0
 
-            # Yield CPU after generating 10 payloads.
+            # Yield CPU after generating 1 payload.
             # The average payload generation time (on my machine)
             # is approximately 0.01 seconds.
             if generated_payloads == 10:
@@ -122,6 +123,7 @@ def cleanup(connection):
         cv2.destroyAllWindows()
         print 'Closing the socket'
         connection.close()
+        serverStatistics()
 
 def serverStatistics():
     """Logs data for tracking server performance."""
@@ -167,8 +169,6 @@ try:
         consumer_thread.start()
 
 except KeyboardInterrupt:
-    cleanup(connection)
-    serverStatistics()
     sys.exit("KeyboardInterrupt encountered")
 
 finally:
