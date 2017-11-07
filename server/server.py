@@ -72,15 +72,21 @@ def webcamFeed():
             # Yield CPU after generating 10 payloads.
             # The average payload generation time (on my machine)
             # is approximately 0.01 seconds.
-            if generated_payloads == 1:
+            if generated_payloads == 10:
                 generated_payloads = 0
                 webcam_thread_yields += 1
-                time.sleep(0)
+                time.sleep(0.1)
 
 def handleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
     global q, consumer_thread_yields, payload_count
-    consumer_thread_sleep_time = helper.frames_per_payload / 10.0
+
+    # Sleep duration between two socket operations.
+    wait_after_serve = helper.frames_per_payload * helper.player_sleep_time
+
+    # Duration for which consumer waits on the webcam
+    # thread to fill up the queue with payloads.
+    wait_for_writer = helper.frames_per_payload / 10.0
 
     print 'Thread %d: Connection from %s' % (thread_id, client_address)
     print 'Thread %d: Starting broadcast' % thread_id
@@ -90,11 +96,12 @@ def handleConnection(connection, client_address, thread_id):
             if not q.empty():
                 payload_count += 1
                 connection.sendall(q.get())
+                time.sleep(wait_after_serve)
             else:
                 # Yield CPU so that the thread corresponding
                 # to 'webcamFeed' is scheduled.
                 consumer_thread_yields += 1
-                time.sleep(consumer_thread_sleep_time)
+                time.sleep(wait_for_writer)
 
     except socket.error, e:
         if isinstance(e.args, tuple):

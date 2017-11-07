@@ -42,7 +42,6 @@ cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
 try:
     payload_size = struct.calcsize('l')
     data = ""
-    sleep_time = helper.frames_per_payload / 100.0
     socket_ops = 0
 
     while True:
@@ -73,7 +72,7 @@ try:
         frame = pickle.loads(serialized_frame)
         cv2.imshow('frame', frame)
         frame_count += 1
-        time.sleep(sleep_time)
+        time.sleep(helper.player_sleep_time)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
