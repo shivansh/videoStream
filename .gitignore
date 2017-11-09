@@ -7,3 +7,4 @@ docs/
 # Ignore generated files
 *.pyc
 output.avi
+helper.pyo

@@ -16,15 +16,11 @@ import helper
 
 # Define the globals
 args = helper.parser.parse_args()
+max_concurrent_clients = 5
+max_payload_count = 10 * max_concurrent_clients
 
-# TODO (shivansh) Replace queue with say, a list ; the
-# current implementation is buggy as it will work only
-# if there is a single consumer as the payload is always
-# dequeued and sent over the socket. An ideal implementation
-# will maintain a list of payloads to be served, and each
-# consumer should keep track of the last payload which it
-# served and look out for next payload (if ready) in the list.
-q = Queue()
+# Initialize a constant-sized list of payloads.
+payload_list = [None] * max_payload_count
 
 # Start stream and adjust screen resolution.
 cap = cv2.VideoCapture(0)
@@ -38,22 +34,24 @@ webcam_thread_yields = 0    # Total CPU yields for 'webcamFeed'
 consumer_thread_count = 0
 connection = None
 payload_count = 0
+last_written_index = 0
 
 def webcamFeed():
     """Constructs a payload from the frames collected from
-    the webcam and inserts them into a global queue.
+    the webcam and inserts them into a global list.
     """
+    global webcam_thread_yields, payload_list, last_written_index
     payload = ""
-    count_frames = 0
+    frame_count = 0
     generated_payloads = 0
-    global q, webcam_thread_yields
+    write_index = 0
 
     while True:
         ret, frame = cap.read()
         # Serialize the frames
         serialized_frame = pickle.dumps(frame)
         payload += struct.pack('l', len(serialized_frame)) + serialized_frame
-        count_frames += 1
+        frame_count += 1
 
         # Each payload comprises of 'frames_per_payload'
         # number of the following structures -
@@ -64,11 +62,18 @@ def webcamFeed():
         #
         # Collect 'helper.chunk_size' worth of
         # payload before starting the transfer.
-        if count_frames == helper.frames_per_payload:
+        if frame_count == helper.frames_per_payload:
             generated_payloads += 1
-            q.put(payload)
+
+            # Update the list of payloads.
+            payload_list[write_index] = payload
+            if __debug__:
+                print 'Populating index', write_index
+            last_written_index = write_index
+            write_index = (write_index+1) % max_payload_count
+
             payload = ""
-            count_frames = 0
+            frame_count = 0
 
             # Yield CPU after generating 1 payload.
             # The average payload generation time (on my machine)
@@ -85,6 +90,17 @@ def handleConnection(connection, client_address, thread_id):
     # Sleep duration between two socket operations.
     wait_after_serve = helper.frames_per_payload * helper.player_sleep_time
 
+    # The instant when the consumer was created, it should start
+    # broadcasting frames which were generated closest to that
+    # instant. 'last_written_index' is used to keep track of this.
+    index = last_written_index
+
+    # Check if the writer has populated the index'th entry of the
+    # list. This is only useful for the case if the client was started
+    # before the server could entirely populate 'payload_list'.
+    if not payload_list[index]:
+        index = 0
+
     # Duration for which consumer waits on the webcam
     # thread to fill up the queue with payloads.
     wait_for_writer = helper.frames_per_payload / 10.0
@@ -92,17 +108,25 @@ def handleConnection(connection, client_address, thread_id):
     print 'Thread %d: Connection from %s' % (thread_id, client_address)
     print 'Thread %d: Starting broadcast' % thread_id
 
+    served_payloads = 0
+
     try:
         while True:
-            if not q.empty():
-                payload_count += 1
-                connection.sendall(q.get())
-                time.sleep(wait_after_serve)
-            else:
-                # Yield CPU so that the thread corresponding
-                # to 'webcamFeed' is scheduled.
+            payload_count += 1
+            served_payloads += 1
+
+            # Ensure that reader is always behind the writer.
+            if index == last_written_index:
+                if __debug__:
+                    print 'Covered up, waiting for writer'
                 consumer_thread_yields += 1
                 time.sleep(wait_for_writer)
+            else:
+                if __debug__:
+                    print 'Sending index', index
+                connection.sendall(payload_list[index])
+                index = (index+1) % max_payload_count
+                time.sleep(wait_after_serve)
 
     except socket.error, e:
         if isinstance(e.args, tuple):
@@ -118,8 +142,8 @@ def handleConnection(connection, client_address, thread_id):
         print >> sys.stderr, 'IOError:', e
 
 def cleanup(connection):
+    """Closes the connection and performs cleanup."""
     if connection:
-        """Closes the connection and performs cleanup."""
         cv2.destroyAllWindows()
         print 'Closing the socket'
         connection.close()
@@ -145,7 +169,7 @@ print 'Starting up on %s:%s' % server_address
 sock.bind(server_address)
 
 # Listen for incoming connections.
-sock.listen(5)
+sock.listen(max_concurrent_clients)
 
 # Start a thread to collect frames and generate
 # payload to be served to the clients.

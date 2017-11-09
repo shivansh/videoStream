@@ -5,9 +5,8 @@ import argparse
 chunk_size = 2097152
 frames_per_payload = 10
 
-# The duration b/w rendering two adjacent frames.
-# TODO Derive a relation b/w frames per payload and sleep time.
-player_sleep_time = 0.025
+# The duration between rendering two adjacent frames.
+player_sleep_time = 0.1
 
 parser = argparse.ArgumentParser(description='',
                                  add_help = False)
