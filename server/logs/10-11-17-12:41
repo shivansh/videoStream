@@ -1,0 +1,209 @@
+Starting up on localhost:6060
+Thread 0: Waiting for a connection
+Populating index 0
+Populating index 1
+Populating index 2
+Populating index 3
+Populating index 4
+Populating index 5
+Thread 0: Connection from ('127.0.0.1', 42030)
+ Thread 1: Waiting for a connection
+Thread 0: Starting broadcast
+Covered up, waiting for writer
+Covered up, waiting for writer
+Populating index 6
+Sending index 5
+Covered up, waiting for writer
+Covered up, waiting for writer
+Populating index 7
+Sending index 6
+Covered up, waiting for writer
+Populating index 8
+Sending index 7
+Covered up, waiting for writer
+Populating index 9
+Sending index 8
+Covered up, waiting for writer
+Populating index 10
+Sending index 9
+Covered up, waiting for writer
+Populating index 11
+Sending index 10
+Covered up, waiting for writer
+Populating index 12
+ Covered up, waiting for writer
+Sending index 11
+Covered up, waiting for writer
+Populating index 13
+Sending index 12
+Covered up, waiting for writer
+Populating index 14
+Sending index 13
+Covered up, waiting for writer
+Populating index 15
+Sending index 14
+Covered up, waiting for writer
+Covered up, waiting for writer
+Populating index 16
+Sending index 15
+Covered up, waiting for writer
+Populating index 17
+Sending index 16
+Covered up, waiting for writer
+Populating index 18
+Sending index 17
+Covered up, waiting for writer
+Covered up, waiting for writer
+Populating index 19
+Sending index 18
+Covered up, waiting for writer
+Populating index 20
+Sending index 19
+Covered up, waiting for writer
+Populating index 21
+Sending index 20
+Populating index 22
+Sending index 21
+Covered up, waiting for writer
+Populating index 23
+Sending index 22
+Populating index 24
+Sending index 23
+Populating index 25
+Sending index 24
+Populating index 26
+Sending index 25
+Populating index 27
+Sending index 26
+Populating index 28
+Sending index 27
+Populating index 29
+Populating index 30
+Sending index 28
+Sending index 29
+Populating index 31
+Sending index 30
+Populating index 32
+Populating index 33
+Sending index 31
+Populating index 34
+Sending index 32
+Populating index 35
+Sending index 33
+Populating index 36
+Sending index 34
+Populating index 37
+Sending index 35
+Populating index 38
+Sending index 36
+Populating index 39
+Sending index 37
+Populating index 40
+Sending index 38
+Populating index 41
+Populating index 42
+Sending index 39
+Populating index 43
+Sending index 40
+Populating index 44
+Sending index 41
+Populating index 45
+Sending index 42
+Populating index 46
+Sending index 43
+Populating index 47
+Sending index 44
+Populating index 48
+Sending index 45
+Populating index 49
+Sending index 46
+Populating index 0
+Populating index 1
+Sending index 47
+Populating index 2
+Sending index 48
+Populating index 3
+Sending index 49
+Populating index 4
+Sending index 0
+Populating index 5
+Sending index 1
+Populating index 6
+Sending index 2
+Populating index 7
+Sending index 3
+Populating index 8
+Populating index 9
+ Sending index 4
+Populating index 10
+Sending index 5
+Populating index 11
+Sending index 6
+Populating index 12
+Sending index 7
+Populating index 13
+Sending index 8
+Populating index 14
+Sending index 9
+Populating index 15
+Sending index 10
+Populating index 16
+Sending index 11
+Populating index 17
+Sending index 12
+Populating index 18
+Sending index 13
+Populating index 19
+Sending index 14
+Populating index 20
+Populating index 21
+Sending index 15
+Populating index 22
+Sending index 16
+Populating index 23
+Sending index 17
+Populating index 24
+Sending index 18
+Populating index 25
+Sending index 19
+Populating index 26
+Sending index 20
+Populating index 27
+Sending index 21
+Populating index 28
+Sending index 22
+Populating index 29
+Populating index 30
+Sending index 23
+Populating index 31
+Sending index 24
+Populating index 32
+Sending index 25
+Populating index 33
+Sending index 26
+Populating index 34
+Sending index 27
+Populating index 35
+Sending index 28
+Populating index 36
+Sending index 29
+Populating index 37
+Populating index 38
+Sending index 30
+Sending index 31
+Populating index 39
+^CClosing the socket
+
+Server statistics
+-----------------
+No. of CPU yields -
+  * handleConnection: 22
+  * webcamFeed: 9
+Payloads delivered: 99
+
+KeyboardInterrupt encountered
+
+Client statistics
+-----------------
+Frames displayed: 770
+Socket operations: 145

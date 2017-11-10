@@ -6,7 +6,7 @@ chunk_size = 2097152
 frames_per_payload = 10
 
 # The duration between rendering two adjacent frames.
-player_sleep_time = 0.1
+player_sleep_time = 0.02
 
 parser = argparse.ArgumentParser(description='',
                                  add_help = False)

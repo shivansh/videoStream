@@ -103,7 +103,7 @@ def handleConnection(connection, client_address, thread_id):
 
     # Duration for which consumer waits on the webcam
     # thread to fill up the queue with payloads.
-    wait_for_writer = helper.frames_per_payload / 10.0
+    wait_for_writer = helper.frames_per_payload / 100.0
 
     print 'Thread %d: Connection from %s' % (thread_id, client_address)
     print 'Thread %d: Starting broadcast' % thread_id
