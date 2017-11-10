@@ -113,7 +113,6 @@ def handleConnection(connection, client_address, thread_id):
     try:
         while True:
             payload_count += 1
-            served_payloads += 1
 
             # Ensure that reader is always behind the writer.
             if index == last_written_index:
@@ -125,6 +124,7 @@ def handleConnection(connection, client_address, thread_id):
                 if __debug__:
                     print 'Sending index', index
                 connection.sendall(payload_list[index])
+                served_payloads += 1
                 index = (index+1) % max_payload_count
                 time.sleep(wait_after_serve)
 
