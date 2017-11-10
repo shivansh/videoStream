@@ -13,6 +13,7 @@ import helper
 args = helper.parser.parse_args()
 frame_count = 0
 socket_ops = 0
+retrieved_payloads = 0
 
 def cleanup(sock):
     """Closes the connection and performs cleanup."""
@@ -25,6 +26,7 @@ def clientStatistics():
     """Logs data for tracking client performance."""
     print '\nClient statistics' \
         + '\n-----------------'
+    print 'Payloads retrieved:', retrieved_payloads
     print 'Frames displayed:', frame_count
     print 'Socket operations:', socket_ops
     print ''
@@ -58,6 +60,7 @@ try:
         # first 'paylaod_size' bytes.
         packed_chunk_size = data[:payload_size]
         chunk_size = struct.unpack('l', packed_chunk_size)[0]
+        retrieved_payloads += 1
 
         data = data[payload_size:]
 
