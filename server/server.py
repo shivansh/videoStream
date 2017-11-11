@@ -68,7 +68,8 @@ def webcamFeed():
             # Update the list of payloads.
             payload_list[write_index] = payload
             if __debug__:
-                print 'Populating index', write_index
+                pass
+                #  print 'Populating index', write_index
             last_written_index = write_index
             write_index = (write_index+1) % max_payload_count
 
@@ -81,9 +82,9 @@ def webcamFeed():
             if generated_payloads == 10:
                 generated_payloads = 0
                 webcam_thread_yields += 1
-                time.sleep(0.1)
+                # time.sleep(0.1)
 
-def handleConnection(connection, client_address, thread_id):
+def handleConnection(client_port, client_address, thread_id):
     """Handles an individual client connection."""
     global q, consumer_thread_yields, payload_count
 
@@ -106,9 +107,12 @@ def handleConnection(connection, client_address, thread_id):
     wait_for_writer = helper.frames_per_payload / 100.0
 
     print 'Thread %d: Connection from %s' % (thread_id, client_address)
-    print 'Thread %d: Starting broadcast' % thread_id
+    print 'Thread %d: Starting broadcast to port %d' % (thread_id, client_port)
 
     served_payloads = 0
+    local_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    destination_address = (client_address[0], client_port)
+    print 'Destination: %s:%s' % destination_address
 
     try:
         while True:
@@ -119,14 +123,14 @@ def handleConnection(connection, client_address, thread_id):
                 if __debug__:
                     print 'Covered up, waiting for writer'
                 consumer_thread_yields += 1
-                time.sleep(wait_for_writer)
+                time.sleep(0.01)
             else:
                 if __debug__:
                     print 'Sending index', index
-                connection.sendall(payload_list[index])
+                local_sock.sendto(payload_list[index], destination_address)
                 served_payloads += 1
                 index = (index+1) % max_payload_count
-                time.sleep(wait_after_serve)
+                #  time.sleep(wait_after_serve)
 
     except socket.error, e:
         if isinstance(e.args, tuple):
@@ -160,16 +164,16 @@ def serverStatistics():
     print ''
 
 # Create a TCP/IP socket.
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Bind the socket to a port.
-server_address = ('localhost', args.port)
+server_address = ('localhost', args.server_port)
 print 'Starting up on %s:%s' % server_address
 sock.bind(server_address)
 
 # Listen for incoming connections.
-sock.listen(max_concurrent_clients)
+# sock.listen(max_concurrent_clients)
 
 # Start a thread to collect frames and generate
 # payload to be served to the clients.
@@ -180,17 +184,22 @@ webcam_thread.start()
 try:
     while True:
         print 'Thread %d: Waiting for a connection' % consumer_thread_count
-        connection, client_address = sock.accept()
+        packed_data, client_address = sock.recvfrom(helper.chunk_size)
 
-        # Start a consumer thread corresponding to
-        # each connected client.
-        consumer_thread = Thread(target = handleConnection,
-                                 args = (connection,
-                                         client_address,
-                                         consumer_thread_count))
-        consumer_thread_count += 1
-        consumer_thread.setDaemon(True)
-        consumer_thread.start()
+        var_size = struct.calcsize('i')
+        client_port = struct.unpack('i', packed_data[:var_size])[0]
+        token = pickle.loads(packed_data[var_size:])
+
+        if token == 'mytoken':
+            # Start a consumer thread corresponding to
+            # each connected client.
+            consumer_thread = Thread(target = handleConnection,
+                                     args = (client_port,
+                                             client_address,
+                                             consumer_thread_count))
+            consumer_thread_count += 1
+            consumer_thread.setDaemon(True)
+            consumer_thread.start()
 
 except KeyboardInterrupt:
     sys.exit("KeyboardInterrupt encountered")

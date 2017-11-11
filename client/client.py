@@ -18,7 +18,7 @@ retrieved_payloads = 0
 def cleanup(sock):
     """Closes the connection and performs cleanup."""
     print 'Closing the socket'
-    sock.close()
+    # sock.close()
     cv2.destroyAllWindows()
     clientStatistics()
 
@@ -31,14 +31,19 @@ def clientStatistics():
     print 'Socket operations:', socket_ops
     print ''
 
-# Create a TCP/IP socket.
+# Create a UDP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.bind(('localhost', args.client_port))
+print 'Connecting to server from address %s:%s' % ('localhost', args.client_port)
 
 # Connect the socket to the server on its listening port.
-server_address = ('localhost', args.port)
+server_address = ('localhost', args.server_port)
 print 'Connecting to %s:%s' % server_address
-sock.connect(server_address)
+
+payload = struct.pack('i', args.client_port) + pickle.dumps('mytoken')
+tmp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+tmp_sock.sendto(payload, server_address)
 
 # Restrict the media-player window size to fit the screen.
 cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
@@ -50,7 +55,7 @@ try:
 
     while True:
         while len(data) < payload_size:
-            payload = sock.recv(helper.chunk_size)
+            payload, _ = sock.recvfrom(helper.chunk_size)
             if not payload:
                 sys.exit("Server closed the connection")
             data += payload
@@ -66,7 +71,7 @@ try:
 
         # Retrieve pending payload (if any).
         while len(data) < chunk_size:
-            data += sock.recv(helper.chunk_size)
+            data += sock.recvfrom(helper.chunk_size)[0]
             socket_ops += 1
 
         serialized_frame = data[:chunk_size]
