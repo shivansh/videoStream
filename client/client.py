@@ -67,7 +67,6 @@ try:
             chunk_size *= dim
 
         frame_dims.reverse()
-
         data = data[payload_size:]
 
         # Retrieve pending payload (if any).

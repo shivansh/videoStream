@@ -14,7 +14,9 @@ import helper
 
 # Define the globals
 args = helper.parser.parse_args()
-max_concurrent_clients = 5
+max_concurrent_clients = 5  # Total active clients possible at once.
+
+# TODO Write logic behind this limit.
 max_payload_count = 10 * max_concurrent_clients
 
 # If the reader lags behind the writer by 'lag_threshold'
@@ -31,10 +33,10 @@ frame_height = 120
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
-consumer_thread_count = 0
 connection = None
-payload_count = 0
-last_written_index = 0
+last_written_index = 0     # Index at which the writer wrote last.
+consumer_thread_count = 0  # Number of active clients.
+payload_count = 0          # Number of payloads sent over network.
 
 def WebcamFeed():
     """Constructs a payload from the frames collected from
@@ -43,7 +45,6 @@ def WebcamFeed():
     global payload_list, last_written_index
     payload = ""
     frame_count = 0
-    generated_payloads = 0
     write_index = 0
 
     while True:
@@ -57,7 +58,6 @@ def WebcamFeed():
             hashed_frame_dim += dim
 
         payload += struct.pack('Q', hashed_frame_dim) + frame.tobytes()
-
         frame_count += 1
 
         # Each payload comprises of 'frames_per_payload'
@@ -70,24 +70,20 @@ def WebcamFeed():
         # Collect 'helper.frames_per_payload' number of
         # frames before starting the transfer.
         if frame_count == helper.frames_per_payload:
-            generated_payloads += 1
-
             # Update the list of payloads.
             payload_list[write_index] = payload
+
             if __debug__:
                 print 'Populating index', write_index
+
             last_written_index = write_index
             write_index = (write_index+1) % max_payload_count
-
             payload = ""
             frame_count = 0
 
 def HandleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
     global q, payload_count
-
-    # Sleep duration between two socket operations.
-    wait_after_serve = helper.frames_per_payload * helper.player_sleep_time
 
     # The instant when the consumer was created, it should start
     # broadcasting frames which were generated closest to that
