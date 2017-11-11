@@ -14,14 +14,14 @@ args = helper.parser.parse_args()
 frame_count = 0
 socket_ops = 0
 
-def cleanup(sock):
+def Cleanup(sock):
     """Closes the connection and performs cleanup."""
     print 'Closing the socket'
     sock.close()
     cv2.destroyAllWindows()
-    clientStatistics()
+    ClientStatistics()
 
-def clientStatistics():
+def ClientStatistics():
     """Logs data for tracking client performance."""
     print '\nClient statistics' \
         + '\n-----------------'
@@ -98,4 +98,4 @@ except KeyboardInterrupt:
     sys.exit("KeyboardInterrupt encountered")
 
 finally:
-    cleanup(sock)
+    Cleanup(sock)

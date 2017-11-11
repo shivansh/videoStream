@@ -36,7 +36,7 @@ connection = None
 payload_count = 0
 last_written_index = 0
 
-def webcamFeed():
+def WebcamFeed():
     """Constructs a payload from the frames collected from
     the webcam and inserts them into a global list.
     """
@@ -82,7 +82,7 @@ def webcamFeed():
             payload = ""
             frame_count = 0
 
-def handleConnection(connection, client_address, thread_id):
+def HandleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
     global q, payload_count
 
@@ -141,15 +141,15 @@ def handleConnection(connection, client_address, thread_id):
     except IOError, e:
         print >> sys.stderr, 'IOError:', e
 
-def cleanup(connection):
+def Cleanup(connection):
     """Closes the connection and performs cleanup."""
     if connection:
         cv2.destroyAllWindows()
         print 'Closing the socket'
         connection.close()
-        serverStatistics()
+        ServerStatistics()
 
-def serverStatistics():
+def ServerStatistics():
     """Logs data for tracking server performance."""
     print '\nServer statistics' \
         + '\n-----------------'
@@ -170,7 +170,7 @@ sock.listen(max_concurrent_clients)
 
 # Start a thread to collect frames and generate
 # payload to be served to the clients.
-webcam_thread = Thread(target = webcamFeed)
+webcam_thread = Thread(target = WebcamFeed)
 webcam_thread.setDaemon(True)
 webcam_thread.start()
 
@@ -181,7 +181,7 @@ try:
 
         # Start a consumer thread corresponding to
         # each connected client.
-        consumer_thread = Thread(target = handleConnection,
+        consumer_thread = Thread(target = HandleConnection,
                                  args = (connection,
                                          client_address,
                                          consumer_thread_count))
@@ -193,4 +193,4 @@ except KeyboardInterrupt:
     sys.exit("KeyboardInterrupt encountered")
 
 finally:
-    cleanup(connection)
+    Cleanup(connection)
