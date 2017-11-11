@@ -8,3 +8,4 @@ docs/
 *.pyc
 output.avi
 helper.pyo
+*.txt
