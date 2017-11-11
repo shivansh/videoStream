@@ -125,7 +125,6 @@ def handleConnection(connection, client_address, thread_id):
                 connection.sendall(payload_list[index])
                 served_payloads += 1
                 index = (index+1) % max_payload_count
-                time.sleep(wait_after_serve)
 
     except socket.error, e:
         if isinstance(e.args, tuple):
