@@ -2,6 +2,7 @@
 
 ## Dependencies
 * OpenCV (3.2.0)
+* numpy
 
 ## Instructions
 The current setup performs the transfer locally at localhost.
@@ -12,14 +13,14 @@ The current setup performs the transfer locally at localhost.
   ```
   Retrieve a collection of frames (currently 4096 bytes) from the webcam and construct the following chunk to be transferred -
   ```
-      +--------------+--------------+
-      | Payload size |   Payload    |
-      |   (Packed)   | (Serialized) |
-      +--------------+--------------+
+        +------------------+---------------+
+        | Frame dimensions |     Frame     |
+        |      (Hashed)    | (byte string) |
+        +------------------+---------------+
   ```
 
 * Start the client -
   ```
   python client.py <port>
   ```
-  This will retrieve the payload from server, unpack and desiarialize appropriately and render the frames on the fly.
+  This will retrieve the payload from server, unpack and convert to numpy array appropriately and render the frames on the fly.

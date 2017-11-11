@@ -48,20 +48,27 @@ def webcamFeed():
 
     while True:
         ret, frame = cap.read()
+
         # Serialize the frames
-        serialized_frame = pickle.dumps(frame)
-        payload += struct.pack('l', len(serialized_frame)) + serialized_frame
+        hashed_frame_dim = 0
+        frame_dims = list(frame.shape)
+        for dim in frame_dims:
+            hashed_frame_dim <<= 16
+            hashed_frame_dim += dim
+
+        payload += struct.pack('Q', hashed_frame_dim) + frame.tobytes()
+
         frame_count += 1
 
         # Each payload comprises of 'frames_per_payload'
         # number of the following structures -
-        #       +------------+--------------+
-        #       | Frame size |    Frame     |
-        #       |  (Packed)  | (Serialized) |
-        #       +------------+--------------+
+        #       +------------------+---------------+
+        #       | Frame dimensions |    Frame      |
+        #       |      (Hashed)    | (byte string) |
+        #       +------------------+---------------+
         #
-        # Collect 'helper.chunk_size' worth of
-        # payload before starting the transfer.
+        # Collect 'helper.frames_per_payload' number of
+        # frames before starting the transfer.
         if frame_count == helper.frames_per_payload:
             generated_payloads += 1
 

@@ -1,6 +1,7 @@
 """Client file to request files from the server."""
 
 import cv2
+import numpy as np
 import pickle
 import socket
 import struct
@@ -42,7 +43,7 @@ sock.connect(server_address)
 cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
 
 try:
-    payload_size = struct.calcsize('l')
+    payload_size = struct.calcsize('Q')
     data = ""
     socket_ops = 0
 
@@ -56,8 +57,17 @@ try:
 
         # Retrieve the payload size by unpacking the
         # first 'paylaod_size' bytes.
-        packed_chunk_size = data[:payload_size]
-        chunk_size = struct.unpack('l', packed_chunk_size)[0]
+        packed_frame_dim = data[:payload_size]
+        hashed_frame_dim = struct.unpack('Q', packed_frame_dim)[0]
+
+        frame_dims, chunk_size = [], 1
+        while hashed_frame_dim:
+            dim = hashed_frame_dim & 0xFFFF
+            frame_dims += [dim]
+            hashed_frame_dim >>= 16
+            chunk_size *= dim
+
+        frame_dims.reverse()
 
         data = data[payload_size:]
 
@@ -77,7 +87,7 @@ try:
         data = data[chunk_size:]
 
         # Deserialize frames retreived from the payload.
-        frame = pickle.loads(serialized_frame)
+        frame = np.fromstring(serialized_frame, dtype='uint8').reshape(frame_dims)
         cv2.imshow('frame', frame)
         frame_count += 1
         time.sleep(helper.player_sleep_time)
