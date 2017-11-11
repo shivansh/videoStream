@@ -63,7 +63,10 @@ try:
 
         # Retrieve pending payload (if any).
         while len(data) < chunk_size:
-            data += sock.recv(helper.chunk_size)
+            payload = sock.recv(helper.chunk_size)
+            if not payload:
+                sys.exit("Server closed connection")
+            data += payload
             socket_ops += 1
 
         serialized_frame = data[:chunk_size]
