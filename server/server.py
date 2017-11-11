@@ -1,9 +1,7 @@
 """Server file to serve files requested by the connecting clients."""
 
 import cv2
-import datetime
 import errno
-import pickle
 import socket
 import struct
 import sys
@@ -19,6 +17,10 @@ args = helper.parser.parse_args()
 max_concurrent_clients = 5
 max_payload_count = 10 * max_concurrent_clients
 
+# If the reader lags behind the writer by 'lag_threshold'
+# number of payloads, it is synchronized with the writer.
+lag_threshold = 5
+
 # Initialize a constant-sized list of payloads.
 payload_list = [None] * max_payload_count
 
@@ -29,8 +31,6 @@ frame_height = 120
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
-consumer_thread_yields = 0  # Total CPU yields for 'handleConnection'
-webcam_thread_yields = 0    # Total CPU yields for 'webcamFeed'
 consumer_thread_count = 0
 connection = None
 payload_count = 0
@@ -40,7 +40,7 @@ def webcamFeed():
     """Constructs a payload from the frames collected from
     the webcam and inserts them into a global list.
     """
-    global webcam_thread_yields, payload_list, last_written_index
+    global payload_list, last_written_index
     payload = ""
     frame_count = 0
     generated_payloads = 0
@@ -63,8 +63,8 @@ def webcamFeed():
         # Each payload comprises of 'frames_per_payload'
         # number of the following structures -
         #       +------------------+---------------+
-        #       | Frame dimensions |    Frame      |
-        #       |      (Hashed)    | (byte string) |
+        #       | Frame dimensions |     Frame     |
+        #       |     (Hashed)     | (byte string) |
         #       +------------------+---------------+
         #
         # Collect 'helper.frames_per_payload' number of
@@ -82,16 +82,9 @@ def webcamFeed():
             payload = ""
             frame_count = 0
 
-            # Yield CPU after generating 1 payload.
-            # The average payload generation time (on my machine)
-            # is approximately 0.01 seconds.
-            if generated_payloads == 10:
-                generated_payloads = 0
-                webcam_thread_yields += 1
-
 def handleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
-    global q, consumer_thread_yields, payload_count
+    global q, payload_count
 
     # Sleep duration between two socket operations.
     wait_after_serve = helper.frames_per_payload * helper.player_sleep_time
@@ -118,15 +111,18 @@ def handleConnection(connection, client_address, thread_id):
 
     try:
         while True:
-            # Ensure that reader is always behind the writer.
+            # Ensure that the reader is always behind the writer.
             if index == last_written_index:
                 if __debug__:
                     print 'Covered up, waiting for writer'
-                consumer_thread_yields += 1
                 time.sleep(wait_for_writer)
             else:
+                if abs(last_written_index - index) >= lag_threshold:
+                    index = last_written_index
+
                 if __debug__:
                     print 'Sending index', index
+
                 payload_count += 1
                 connection.sendall(payload_list[index])
                 served_payloads += 1
@@ -156,10 +152,7 @@ def cleanup(connection):
 def serverStatistics():
     """Logs data for tracking server performance."""
     print '\nServer statistics' \
-        + '\n-----------------' \
-        + '\nNo. of CPU yields -'
-    print '  * handleConnection:', consumer_thread_yields
-    print '  * webcamFeed:', webcam_thread_yields
+        + '\n-----------------'
     print 'Payloads delivered:', payload_count
     print ''
 

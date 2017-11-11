@@ -2,8 +2,8 @@
 
 import argparse
 
-chunk_size = 2097152
-frames_per_payload = 10
+frames_per_payload = 5
+chunk_size = 1728080 * frames_per_payload
 
 # The duration between rendering two adjacent frames.
 player_sleep_time = 0.02

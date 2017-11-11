@@ -5,7 +5,9 @@ Data to keep track of server performance.
 * Average payload generation time: `0.01 seconds`
 
 ## [Logs](logs)
-## Thread scheduling data
+## Thread scheduling data (Obsolete)
+This data is now obsolete, kept only for historical reasons.
+
 | Commit  | handleConnection (CPU yields) | webcamFeed (CPU yields) |
 |---------|:-----------------------------:|:-----------------------:|
 | 4b6d88f |              126              |          363473         |

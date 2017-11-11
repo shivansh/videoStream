@@ -15,7 +15,7 @@ The current setup performs the transfer locally at localhost.
   ```
         +------------------+---------------+
         | Frame dimensions |     Frame     |
-        |      (Hashed)    | (byte string) |
+        |     (Hashed)     | (byte string) |
         +------------------+---------------+
   ```
 
