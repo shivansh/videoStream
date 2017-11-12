@@ -113,7 +113,13 @@ def HandleConnection(connection, client_address, thread_id):
                     print 'Covered up, waiting for writer'
                 time.sleep(wait_for_writer)
             else:
-                if abs(last_written_index - index) >= lag_threshold:
+                # Evaluate the lag between the reader and the writer.
+                if (last_written_index - index) >= 0:
+                    lag = last_written_index - index
+                else:
+                    lag = max_payload_count - index + last_written_index
+
+                if lag >= lag_threshold:
                     index = last_written_index
 
                 if __debug__:
