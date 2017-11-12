@@ -1,4 +1,4 @@
-"""Server file to serve files requested by the connecting clients."""
+"""Server file to broadcast live stream to the connected clients."""
 
 import cv2
 import errno
@@ -7,7 +7,6 @@ import struct
 import sys
 import time
 from threading import Thread
-from Queue import Queue
 
 sys.path.insert(0, '../include')
 import helper
@@ -50,7 +49,7 @@ def WebcamFeed():
     while True:
         ret, frame = cap.read()
 
-        # Serialize the frames
+        # Convert the frame into a byte string
         hashed_frame_dim = 0
         frame_dims = list(frame.shape)
         for dim in frame_dims:

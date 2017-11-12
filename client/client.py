@@ -1,4 +1,4 @@
-"""Client file to request files from the server."""
+"""Client file to request and render the live stream from the server."""
 
 import cv2
 import numpy as np
