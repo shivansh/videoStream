@@ -34,7 +34,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Connect the socket to the server on its listening port.
-server_address = ('localhost', args.port)
+server_address = (args.server_ip, args.port)
 print 'Connecting to %s:%s' % server_address
 sock.connect(server_address)
 

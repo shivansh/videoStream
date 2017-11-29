@@ -13,8 +13,13 @@ parser = argparse.ArgumentParser(description='',
 parser.add_argument('-h', '--help',
                     action='help',
                     default=argparse.SUPPRESS)
-parser.add_argument('port',
+parser.add_argument('-s', '--server_ip',
+                    type=str,
+                    default='localhost',
+                    help='Server IP address')
+parser.add_argument('-p', '--port',
                     type = int,
+                    default = 8080,
                     help = 'Server port number')
 
 def readFileInChunks(file_object, chunk_size):
