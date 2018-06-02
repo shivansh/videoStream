@@ -14,20 +14,23 @@ args = helper.parser.parse_args()
 frame_count = 0
 socket_ops = 0
 
-def Cleanup(sock):
+
+def cleanup(sock):
     """Closes the connection and performs cleanup."""
     print 'Closing the socket'
     sock.close()
     cv2.destroyAllWindows()
-    ClientStatistics()
+    clientStatistics()
 
-def ClientStatistics():
+
+def clientStatistics():
     """Logs data for tracking client performance."""
     print '\nClient statistics' \
         + '\n-----------------'
     print 'Frames displayed:', frame_count
     print 'Socket operations:', socket_ops
     print ''
+
 
 # Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,12 +53,11 @@ try:
         while len(data) < payload_size:
             payload = sock.recv(helper.chunk_size)
             if not payload:
-                sys.exit("Server closed the connection")
+                sys.exit("Server closed the connection.")
             data += payload
             socket_ops += 1
 
-        # Retrieve the payload size by unpacking the
-        # first 'paylaod_size' bytes.
+        # Retrieve the payload size by unpacking the first 'payload_size' bytes.
         packed_frame_dim = data[:payload_size]
         hashed_frame_dim = struct.unpack('Q', packed_frame_dim)[0]
 
@@ -73,19 +75,19 @@ try:
         while len(data) < chunk_size:
             payload = sock.recv(helper.chunk_size)
             if not payload:
-                sys.exit("Server closed connection")
+                sys.exit("Server closed the connection.")
             data += payload
             socket_ops += 1
 
         serialized_frame = data[:chunk_size]
 
-        # It might be possible that the next payload was
-        # retrieved in the above (second) transfer.
-        # Update 'data' to contain only the next payload.
+        # It might be possible that the next payload was retrieved in the above
+        # (second) transfer. Update 'data' to contain only the next payload.
         data = data[chunk_size:]
 
         # Deserialize frames retreived from the payload.
-        frame = np.fromstring(serialized_frame, dtype='uint8').reshape(frame_dims)
+        frame = np.fromstring(
+            serialized_frame, dtype='uint8').reshape(frame_dims)
         cv2.imshow('frame', frame)
         frame_count += 1
         time.sleep(helper.player_sleep_time)
@@ -94,7 +96,7 @@ try:
             break
 
 except KeyboardInterrupt:
-    sys.exit("KeyboardInterrupt encountered")
+    sys.exit("Exiting.")
 
 finally:
-    Cleanup(sock)
+    cleanup(sock)

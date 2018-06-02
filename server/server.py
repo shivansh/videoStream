@@ -33,11 +33,12 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
 connection = None
-last_written_index = 0     # Index at which the writer wrote last.
+last_written_index = 0  # Index at which the writer wrote last.
 consumer_thread_count = 0  # Number of active clients.
-payload_count = 0          # Number of payloads sent over network.
+payload_count = 0  # Number of payloads sent over network.
 
-def WebcamFeed():
+
+def webcamFeed():
     """Constructs a payload from the frames collected from
     the webcam and inserts them into a global list.
     """
@@ -59,15 +60,15 @@ def WebcamFeed():
         payload += struct.pack('Q', hashed_frame_dim) + frame.tobytes()
         frame_count += 1
 
-        # Each payload comprises of 'frames_per_payload'
-        # number of the following structures -
+        # Each payload comprises of 'frames_per_payload' number of the
+        # following structures -
         #       +------------------+---------------+
         #       | Frame dimensions |     Frame     |
         #       |     (Hashed)     | (byte string) |
         #       +------------------+---------------+
         #
-        # Collect 'helper.frames_per_payload' number of
-        # frames before starting the transfer.
+        # Collect 'helper.frames_per_payload' number of frames before starting
+        # the transfer.
         if frame_count == helper.frames_per_payload:
             # Update the list of payloads.
             payload_list[write_index] = payload
@@ -76,27 +77,28 @@ def WebcamFeed():
                 print 'Populating index', write_index
 
             last_written_index = write_index
-            write_index = (write_index+1) % max_payload_count
+            write_index = (write_index + 1) % max_payload_count
             payload = ""
             frame_count = 0
 
-def HandleConnection(connection, client_address, thread_id):
+
+def handle_connection(connection, client_address, thread_id):
     """Handles an individual client connection."""
     global q, payload_count
 
-    # The instant when the consumer was created, it should start
-    # broadcasting frames which were generated closest to that
-    # instant. 'last_written_index' is used to keep track of this.
+    # The instant when the consumer was created, it should start broadcasting
+    # frames which were generated closest to that instant. 'last_written_index'
+    # is used to keep track of this.
     index = last_written_index
 
-    # Check if the writer has populated the index'th entry of the
-    # list. This is only useful for the case if the client was started
-    # before the server could entirely populate 'payload_list'.
+    # Check if the writer has populated the index'th entry of the list. This is
+    # only useful for the case if the client was started before the server
+    # could entirely populate 'payload_list'.
     if not payload_list[index]:
         index = 0
 
-    # Duration for which consumer waits on the webcam
-    # thread to fill up the queue with payloads.
+    # Duration for which consumer waits on the webcam thread to fill up the
+    # queue with payloads.
     wait_for_writer = helper.frames_per_payload / 10.0
 
     print 'Thread %d: Connection from %s' % (thread_id, client_address)
@@ -127,7 +129,7 @@ def HandleConnection(connection, client_address, thread_id):
                 payload_count += 1
                 connection.sendall(payload_list[index])
                 served_payloads += 1
-                index = (index+1) % max_payload_count
+                index = (index + 1) % max_payload_count
 
     except socket.error, e:
         if isinstance(e.args, tuple):
@@ -142,20 +144,23 @@ def HandleConnection(connection, client_address, thread_id):
     except IOError, e:
         print >> sys.stderr, 'IOError:', e
 
-def Cleanup(connection):
+
+def cleanup(connection):
     """Closes the connection and performs cleanup."""
     if connection:
         cv2.destroyAllWindows()
         print 'Closing the socket'
         connection.close()
-        ServerStatistics()
+        serverStatistics()
 
-def ServerStatistics():
+
+def serverStatistics():
     """Logs data for tracking server performance."""
     print '\nServer statistics' \
         + '\n-----------------'
     print 'Payloads delivered:', payload_count
     print ''
+
 
 # Create a TCP/IP socket.
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -169,9 +174,8 @@ sock.bind(server_address)
 # Listen for incoming connections.
 sock.listen(max_concurrent_clients)
 
-# Start a thread to collect frames and generate
-# payload to be served to the clients.
-webcam_thread = Thread(target = WebcamFeed)
+# Start a thread to collect frames and generate payload to be served to clients.
+webcam_thread = Thread(target=webcamFeed)
 webcam_thread.setDaemon(True)
 webcam_thread.start()
 
@@ -180,18 +184,16 @@ try:
         print 'Thread %d: Waiting for a connection' % consumer_thread_count
         connection, client_address = sock.accept()
 
-        # Start a consumer thread corresponding to
-        # each connected client.
-        consumer_thread = Thread(target = HandleConnection,
-                                 args = (connection,
-                                         client_address,
-                                         consumer_thread_count))
+        # Start a consumer thread corresponding to each connected client.
+        consumer_thread = Thread(
+            target=handle_connection,
+            args=(connection, client_address, consumer_thread_count))
         consumer_thread_count += 1
         consumer_thread.setDaemon(True)
         consumer_thread.start()
 
 except KeyboardInterrupt:
-    sys.exit("KeyboardInterrupt encountered")
+    sys.exit("Exiting.")
 
 finally:
-    Cleanup(connection)
+    cleanup(connection)

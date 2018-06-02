@@ -20,7 +20,7 @@ The current setup performs the transfer locally at localhost.
 
 * Start the server -
   ```
-  python -O server.py <port>
+  python -O server.py -p <port>
   ```
   To enable debug mode, remove the `-O` flag.  
   The server retrieves `frames_per_payload` number of frames from the webcam and constructs the following payload which is transferred -    
@@ -28,6 +28,6 @@ The current setup performs the transfer locally at localhost.
 
 * Start the client -
   ```
-  python client.py <port>
+  python client.py -p <port>
   ```
   This will retrieve the payload from server, unpack and convert to numpy array appropriately, rendering the frames on the fly.

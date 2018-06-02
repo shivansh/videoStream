@@ -8,19 +8,17 @@ chunk_size = 1728080 * frames_per_payload
 # The duration between rendering two adjacent frames.
 player_sleep_time = 0.02
 
-parser = argparse.ArgumentParser(description='',
-                                 add_help = False)
-parser.add_argument('-h', '--help',
-                    action='help',
-                    default=argparse.SUPPRESS)
-parser.add_argument('-s', '--server_ip',
-                    type=str,
-                    default='localhost',
-                    help='Server IP address')
-parser.add_argument('-p', '--port',
-                    type = int,
-                    default = 8080,
-                    help = 'Server port number')
+parser = argparse.ArgumentParser(description='', add_help=False)
+parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS)
+parser.add_argument(
+    '-s',
+    '--server_ip',
+    type=str,
+    default='localhost',
+    help='Server IP address')
+parser.add_argument(
+    '-p', '--port', type=int, default=8080, help='Server port number')
+
 
 def readFileInChunks(file_object, chunk_size):
     """Lazy function to read file in 'chunk_size' byte chunks.
