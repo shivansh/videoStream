@@ -11,19 +11,22 @@ from threading import Thread
 sys.path.insert(0, '../include')
 import helper
 
-# Global declarations
 args = helper.parser.parse_args()
 max_concurrent_clients = 5  # total active clients possible at once
 
-# TODO Write logic behind this limit.
-max_payload_count = 10 * max_concurrent_clients
+# If the reader lags behind the writer by lag_threshold number of payloads,
+# it is synchronized with the writer.
+lag_threshold = 10
+
+# At any given instant, the gap between a reader and the writer can be atmost
+# lag_threshold. This is also the lower bound on the size of the payload buffer.
+max_payload_count = lag_threshold + 1
 
 # Initialize a constant-sized list of payloads.
 payload_list = [None] * max_payload_count
 
-#  connection = None
 last_written_index = 0  # index at which the writer wrote last
-payload_count = 0  # number of payloads sent over network
+payload_count = 0  # number of payloads sent over socket
 
 
 def startWebcam():
@@ -85,9 +88,6 @@ def handleConnection(connection, client_address, thread_id):
     """Handles an individual client connection."""
     global q, payload_count
 
-    # If the reader lags behind the writer by lag_threshold number of payloads,
-    # it is synchronized with the writer.
-    lag_threshold = 5
     served_payloads = 0
 
     # The instant when the consumer was created, it should start broadcasting
@@ -170,7 +170,7 @@ def serverStatistics():
 def main():
     """Sets up a listening socket for incoming connections."""
     connection = None
-    consumer_thread_count = 0  # number of active clients
+    reader_count = 0  # number of active readers (clients)
 
     # Create a TCP/IP socket.
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -194,14 +194,14 @@ def main():
 
     try:
         while True:
-            print 'Thread %d: Waiting for a connection' % consumer_thread_count
+            print 'Thread %d: Waiting for a connection' % reader_count
             connection, client_address = sock.accept()
 
             # Start a consumer thread corresponding to each connected client.
             consumer_thread = Thread(
                 target=handleConnection,
-                args=(connection, client_address, consumer_thread_count))
-            consumer_thread_count += 1
+                args=(connection, client_address, reader_count))
+            reader_count += 1
             consumer_thread.setDaemon(True)
             consumer_thread.start()
 
