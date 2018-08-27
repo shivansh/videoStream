@@ -2,8 +2,11 @@
 
 import argparse
 
-frames_per_payload = 5
-chunk_size = 1728080 * frames_per_payload
+# The frame size is evaluated with respect to the current image quality.
+# TODO: do this computation during runtime.
+frame_size = 1728080
+frames_per_payload = 1
+chunk_size = frame_size * frames_per_payload
 
 # The duration between rendering two adjacent frames.
 player_sleep_time = 0.02
