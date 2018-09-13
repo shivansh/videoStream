@@ -16,7 +16,12 @@ The implemented reader-writer model depicting 3 concurrent readers -
 ### [Project Report](report/cs425-mini-project.pdf)
 
 ## Instructions
+
+For quick testing purposes, run `./run.sh`. This script starts a server and client process.
+
 The current setup performs the transfer locally at localhost.
+
+To run the individual components, follow the instructions below.
 
 * Start the server -
   ```
