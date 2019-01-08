@@ -15,7 +15,7 @@ args = helper.parser.parse_args()
 
 def cleanup(sock, frame_count, socket_ops):
     """Closes the connection and performs cleanup."""
-    print 'Closing the socket'
+    print("Closing the socket")
     sock.close()
     cv2.destroyAllWindows()
     clientStatistics(frame_count, socket_ops)
@@ -24,7 +24,7 @@ def cleanup(sock, frame_count, socket_ops):
 def clientStatistics(frame_count, socket_ops):
     """Logs data for tracking client performance."""
     print '\nClient statistics' \
-        + '\n-----------------'
+            + '\n-----------------'
     print 'Frames displayed:', frame_count
     print 'Socket operations:', socket_ops
     print ''
@@ -40,7 +40,7 @@ def main():
 
     # Connect the socket to the server on its listening port.
     server_address = (args.server_ip, args.port)
-    print 'Connecting to %s:%s' % server_address
+    print("Connecting to %s:%s" % server_address)
     sock.connect(server_address)
 
     # Restrict the media-player window size to fit the screen.
@@ -88,7 +88,7 @@ def main():
 
             # Deserialize frames retreived from the payload.
             frame = np.fromstring(
-                serialized_frame, dtype='uint8').reshape(frame_dims)
+                    serialized_frame, dtype='uint8').reshape(frame_dims)
             cv2.imshow('frame', frame)
             frame_count += 1
             time.sleep(helper.player_sleep_time)

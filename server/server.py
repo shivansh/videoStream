@@ -6,6 +6,7 @@ import socket
 import struct
 import sys
 import time
+import traceback
 from threading import Thread
 
 sys.path.insert(0, '../include')
@@ -33,12 +34,15 @@ class Server:
 
     def startWebcam(self):
         """Starts the stream and adjusts the screen resolution."""
-        cap = cv2.VideoCapture(0)
-        frame_width = 160
-        frame_height = 120
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
-        return cap
+        try:
+            cap = cv2.VideoCapture(0)
+            frame_width = 160
+            frame_height = 120
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+            return cap
+        except Exception as e:
+            print(traceback.print_exc())
 
     def webcamFeed(self, cap):
         """Constructs a payload from the frames collected from the webcam and
