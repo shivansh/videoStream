@@ -13,7 +13,7 @@ sys.path.insert(0, '../include')
 import helper
 
 args = helper.parser.parse_args()
-max_concurrent_clients = 5  # total active clients possible at once
+max_concurrent_clients = 5    # total active clients possible at once
 
 # If the reader lags behind the writer by lag_threshold number of payloads,
 # it is synchronized with the writer.
@@ -29,8 +29,8 @@ class Server:
     def __init__(self, lag_threshold, max_payload_count):
         self.lag_threshold = lag_threshold
         self.max_payload_count = max_payload_count
-        self.last_written_index = 0  # index at which the writer wrote last
-        self.payload_count = 0  # number of payloads sent over socket
+        self.last_written_index = 0    # index at which the writer wrote last
+        self.payload_count = 0    # number of payloads sent over socket
 
     def startWebcam(self):
         """Starts the stream and adjusts the screen resolution."""
@@ -49,9 +49,9 @@ class Server:
         inserts them into a global list.
         """
         global payload_list
-        payload = ""
-        frame_count = 0  # number of frames delivered
-        write_index = 0  # most recently updated index of the message queue
+        payload = bytearray()
+        frame_count = 0    # number of frames delivered
+        write_index = 0    # most recently updated index of the message queue
 
         while True:
             ret, frame = cap.read()
@@ -63,7 +63,10 @@ class Server:
                 hashed_frame_dim <<= 16
                 hashed_frame_dim += dim
 
-            payload += struct.pack('Q', hashed_frame_dim) + frame.tobytes()
+            payload.extend(struct.pack('Q', hashed_frame_dim))
+            payload.extend(frame.tobytes())
+            #  payload.append(struct.pack('Q', hashed_frame_dim))
+            #  payload.append()
             frame_count += 1
 
             # Each payload comprises of 'frames_per_payload' number of the
@@ -85,12 +88,12 @@ class Server:
 
                 self.last_written_index = write_index
                 write_index = (write_index + 1) % self.max_payload_count
-                payload = ""
+                payload = bytearray()
                 frame_count = 0
 
     def handleConnection(self, connection, client_address, thread_id):
         """Handles an individual client connection."""
-        global q  # TODO: inspect this
+        global q    # TODO: inspect this
 
         served_payloads = 0
 
@@ -140,18 +143,19 @@ class Server:
                     served_payloads += 1
                     index = (index + 1) % self.max_payload_count
 
-        except socket.error as e:
-            if isinstance(e.args, tuple):
-                if e[0] == errno.EPIPE:
-                    print >> sys.stderr, 'Client disconnected'
-                else:
-                    # TODO Handle other socket errors.
-                    pass
-            else:
-                print >> sys.stderr, 'Socket error', e
+        except ConnectionResetError:
+            print('Client disconnected', file=sys.stderr)
 
         except IOError as e:
-            print >> sys.stderr, 'IOError:', e
+            print('IOError:', e, file=sys.stderr)
+
+    def serverStatistics(self):
+        """Logs data for tracking server performance."""
+        print("Server statistics:", self.payload_count)
+        # print '\nServer statistics' \
+        #     + '\n-----------------'
+        # print 'Payloads delivered:', self.payload_count
+        # print ''
 
     def cleanup(self, connection):
         """Closes the connection and performs cleanup."""
@@ -159,20 +163,13 @@ class Server:
             cv2.destroyAllWindows()
             print('Closing the socket')
             connection.close()
-            serverStatistics()
-
-    def serverStatistics():
-        """Logs data for tracking server performance."""
-        # print '\nServer statistics' \
-        #     + '\n-----------------'
-        # print 'Payloads delivered:', self.payload_count
-        # print ''
+            self.serverStatistics()
 
 
 def main():
     """Sets up a listening socket for incoming connections."""
     connection = None
-    reader_count = 0  # number of active readers (clients)
+    reader_count = 0    # number of active readers (clients)
 
     # Create a TCP/IP socket.
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
