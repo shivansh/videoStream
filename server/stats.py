@@ -24,8 +24,8 @@ for line in f:
     if C in line:
         num_lags += 1
 
-    if (curr_read == A and prev_read == B) or (curr_read == B and
-                                               prev_read == A):
+    if (curr_read == A and prev_read == B) or (curr_read == B
+                                               and prev_read == A):
         num_thred_switches += 1
     if D in line:
         print line,
