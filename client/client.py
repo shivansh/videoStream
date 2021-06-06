@@ -87,6 +87,7 @@ class Client:
                 frame_count += 1
                 time.sleep(helper.player_sleep_time)
 
+                # Ref: https://stackoverflow.com/a/39201163/5107319
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
